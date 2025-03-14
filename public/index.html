@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Users API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 p-6">
+    <div class="max-w-xl mx-auto bg-white p-6 shadow-lg rounded-lg">
+      <h1 class="text-2xl font-bold mb-4">User List</h1>
+      <ul id="userList" class="space-y-2"></ul>
+    </div>
+
+    <!-- Modal for updating a user -->
+    <div
+      id="updateModal"
+      class="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center hidden"
+    >
+      <div class="bg-white p-6 rounded-lg">
+        <h2 class="text-xl font-bold mb-4">Update User</h2>
+        <input
+          id="updateName"
+          type="text"
+          class="border p-2 mb-4"
+          placeholder="Enter new name"
+        />
+        <div class="flex justify-between">
+          <button
+            onclick="closeModal()"
+            class="bg-gray-500 text-white p-2 rounded"
+            >Cancel</button
+          >
+          <button
+            onclick="updateUser()"
+            class="bg-blue-500 text-white p-2 rounded"
+            >Update</button
+          >
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentUserId = null;
+
+      async function fetchUsers() {
+        const response = await fetch("/user");
+        const users = await response.json();
+        const userList = document.getElementById("userList");
+        userList.innerHTML = users
+          .map(
+            (user) => `
+              <li class="p-2 border rounded flex justify-between items-center">
+                ${user.name}
+                <div>
+                  <button class="bg-blue-500 text-white p-1 rounded mr-2" onclick="showUpdateModal('${user.id}', '${user.name}')">Edit</button>
+                  <button class="bg-red-500 text-white p-1 rounded" onclick="deleteUser('${user.id}')">Delete</button>
+                </div>
+              </li>`,
+          )
+          .join("");
+      }
+
+      async function deleteUser(userId) {
+        await fetch(`/user/${userId}`, { method: "DELETE" });
+        fetchUsers();
+      }
+
+      function showUpdateModal(userId, userName) {
+        currentUserId = userId;
+        document.getElementById("updateName").value = userName;
+        document.getElementById("updateModal").classList.remove("hidden");
+      }
+
+      function closeModal() {
+        document.getElementById("updateModal").classList.add("hidden");
+      }
+
+      async function updateUser() {
+        const updatedName = document.getElementById("updateName").value;
+        if (!updatedName) return;
+
+        await fetch(`/user/${currentUserId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name: updatedName }),
+        });
+
+        fetchUsers();
+        closeModal();
+      }
+
+      fetchUsers();
+    </script>
+  </body>
+</html>
